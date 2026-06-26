@@ -1,0 +1,53 @@
+# Project: g8way
+# Author: Xito
+# License: Apache License 2.0
+providers:
+  kubernetesIngress:
+    enabled: false
+  kubernetesGateway:
+    enabled: true
+
+ports:
+  web:
+    port: 8000
+    exposedPort: 80
+    expose: 
+      enabled: true 
+    protocol: TCP
+
+  websecure:
+    port: 8443
+    exposedPort: 443
+    expose: 
+      enabled: true  
+    protocol: TCP
+
+service:
+  type: LoadBalancer
+  annotations:
+    # MetalLB le dará esta IP fija al Service
+    metallb.universe.tf/loadBalancerIP: 192.168.50.200 
+  externalTrafficPolicy: Local
+  
+gateway:
+  enabled: true   
+  listeners:
+    # http:
+    #   port: 8000 
+    #   protocol: HTTP
+    #   allowedRoutes:   
+    #     namespaces:
+    #       from: All
+    https:
+      port: 8443
+      protocol: HTTPS
+      allowedRoutes:   
+        namespaces:
+          from: All
+      namespacePolicy:
+        from: All
+      mode: Terminate
+      certificateRefs: 
+        - name: nxito-local-tls   
+          kind: Secret
+          namespace: applications

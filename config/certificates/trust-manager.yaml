@@ -1,0 +1,17 @@
+# Project: g8way
+# Author: Xito
+# License: Apache License 2.0
+apiVersion: trust.cert-manager.io/v1alpha1
+kind: Bundle
+metadata:
+  name: nxito-ca-bundle
+spec:
+  sources:
+    # Origen: el secreto de tu CA que ya tienes creado
+    - secret:
+        name: "nxito-ca-key-pair"
+        key: "ca.crt"
+  target:
+    # Destino: creará este ConfigMap en TODOS los namespaces
+    configMap:
+      key: "nxito-ca.crt"

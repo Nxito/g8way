@@ -1,0 +1,23 @@
+services:
+  vault:
+    image: hashicorp/vault:2.0
+    container_name: vault
+    restart: unless-stopped
+    ports:
+      - "8200:8200"
+      - "8201:8201"
+    volumes:
+      - ./config/vault.hcl:/vault/config/vault.hcl:ro
+      - ./certs:/vault/certs:ro
+      - vault-data:/vault/data
+    cap_add:
+      - IPC_LOCK
+    command: vault server -config=/vault/config/vault.hcl
+ 
+volumes:
+  vault-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data

@@ -1,0 +1,62 @@
+# values.yaml para ArgoCD en miniPC local
+
+global:
+  # Dominio si tienes DNS local configurado (deja vacío si usas port-forward)
+  domain: ""
+
+server:
+  service:
+  #   type: NodePort
+  #   nodePortHttp: 30089   # puerto HTTP accesible desde tu red local
+  #   nodePortHttps: 30449
+  # service:
+  #   type: LoadBalancer
+  #   loadBalancerIP: "192.168.50.201" 
+  
+    # ClusterIP  → solo port-forward (más seguro para pruebas)
+    # NodePort   → accesible desde la red local sin port-forward
+    # LoadBalancer → si tienes MetalLB u otro LB instalado
+    type: ClusterIP
+  extraArgs:
+    - --insecure 
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  ingress:
+    enabled: false
+
+configs:
+  params:
+    server.insecure: true
+
+  secret:
+    # Contraseña inicial del admin (bcrypt). Si lo dejas vacío
+    # ArgoCD genera una aleatoria recuperable con el secret de k8s.
+    # Para generar: htpasswd -nbBC 10 "" tuPassword | tr -d ':\n' | sed 's/$2y/$2a/'
+    argocdServerAdminPassword: ""
+applicationSet:
+  enabled: true
+  replicas: 1
+
+repoServer:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+redis:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi

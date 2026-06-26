@@ -1,0 +1,23 @@
+# Project: g8way
+# Author: Xito
+# License: Apache License 2.0
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: local-pool
+  namespace: metallb-system
+spec:
+  addresses:
+  - 192.168.50.200-192.168.50.210
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: local-adv
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+  - local-pool
+# microk8s kubectl delete ipaddresspool default-addresspool -n metallb-system
+# microk8s kubectl get ipaddresspools -n metallb-system
+# microk8s kubectl rollout restart deployment -n metallb-system controller

@@ -1,0 +1,24 @@
+services:
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "8080:80/tcp"
+      - "5443:443/tcp"
+    environment:
+      TZ: 'Europe/Madrid'
+      WEBPASSWORD: 'CHANGE_ME'
+      PIHOLE_DNS_: '1.1.1.1;8.8.8.8'
+      DNSMASQ_LISTENING: 'all'
+      FTLCONF_LOCAL_IPV4: '0.0.0.0'
+      # IP de Tailscale
+      FTLCONF_misc_dnsmasq_lines: |-
+        address=/nxito.local/100.70.128.92
+    volumes:
+      - './etc-pihole:/etc/pihole'
+      - './etc-dnsmasq.d:/etc/dnsmasq.d'
+    cap_add:
+      - NET_ADMIN
+    restart: unless-stopped

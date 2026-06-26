@@ -1,0 +1,16 @@
+# Project: g8way
+# Author: Xito
+# License: Apache License 2.0
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: allow-traefik-tls
+  namespace: applications 
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      namespace: traefik  
+  to:
+    - group: ""
+      kind: Secret

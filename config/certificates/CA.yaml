@@ -1,0 +1,48 @@
+# Project: g8way
+# Author: Xito
+# License: Apache License 2.0
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: nxito-selfsigned-issuer
+  namespace: cert-manager
+spec:
+  selfSigned: {}
+
+--- 
+
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: nxito-ca-cert
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: "Nxito-Tailscale-CA"
+  secretName: nxito-ca-key-pair
+  subject:
+    organizations:
+      - "Nxito Lab"
+    countries:
+      - "ES"
+    provinces:
+      - "A Coruña"
+    localities:
+      - "Santiago de Compostela"
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: nxito-selfsigned-issuer
+    kind: Issuer
+    group: cert-manager.io
+
+--- 
+
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: nxito-ca-issuer
+spec:
+  ca:
+    secretName: nxito-ca-key-pair 

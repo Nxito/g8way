@@ -1,0 +1,111 @@
+# Project: g8way
+# Author: Xito
+# License: Apache License 2.0
+ 
+# kubectl rollout restart deployment oauth2-proxy -n authorization
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oauth2-proxy
+  namespace: authorization
+  labels:
+    app: oauth2-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: oauth2-proxy
+  template:
+    metadata:
+      labels:
+        app: oauth2-proxy
+    spec:
+      # hostAliases:
+      #   - ip: "192.158.50.201"  # IP de MetalLB o la real de auth
+      #     hostnames:
+      #       - "auth.nxito.local"
+      #       - "nxito.local"
+      containers:
+        - name: oauth2-proxy
+          image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.1
+          imagePullPolicy: IfNotPresent
+          args:
+            - --provider=oidc
+            - --oidc-issuer-url=https://auth.nxito.local/realms/nxito-local
+          # Saltamos el Discovery automático para evitar el lío de protocolos interna/externa
+            - --skip-oidc-discovery=true
+            
+            # Definimos los Endpoints usando la red INTERNA de Kubernetes
+            - --login-url=https://auth.nxito.local/realms/nxito-local/protocol/openid-connect/auth
+            - --redeem-url=http://keycloak.authorization.svc.cluster.local:8080/realms/nxito-local/protocol/openid-connect/token
+            - --validate-url=http://keycloak.authorization.svc.cluster.local:8080/realms/nxito-local/protocol/openid-connect/userinfo
+            - --oidc-jwks-url=http://keycloak.authorization.svc.cluster.local:8080/realms/nxito-local/protocol/openid-connect/certs    
+            
+            - --email-domain=*
+            - --user-id-claim=preferred_username
+            - --http-address=0.0.0.0:4180
+            - --metrics-address=0.0.0.0:44180
+            - --redirect-url=https://auth.nxito.local/oauth2/callback
+            - --upstream=static://202
+            - --reverse-proxy=true
+            - --cookie-domain=nxito.local
+            - --cookie-secure=false
+            - --cookie-samesite=lax
+            - --cookie-name=_oauth2_proxy_nxito
+            - --whitelist-domain=.nxito.local
+            - --set-xauthrequest=true
+            - --set-authorization-header=true
+            - --pass-access-token=true
+            - --pass-authorization-header=true
+            - --pass-user-headers=true
+            - --scope=openid profile email
+            - --code-challenge-method=S256
+            - --skip-provider-button=true
+            - --provider-ca-file=/etc/oauth2-proxy/ca.crt
+            - --standard-logging=true
+            - --auth-logging=true
+            - --ssl-insecure-skip-verify=true
+            - --insecure-oidc-skip-issuer-verification=true
+          env:
+            - name: OAUTH2_PROXY_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: oauth2-proxy-secret
+                  key: OAUTH2_PROXY_CLIENT_ID
+            - name: OAUTH2_PROXY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: oauth2-proxy-secret
+                  key: OAUTH2_PROXY_CLIENT_SECRET
+            - name: OAUTH2_PROXY_COOKIE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: oauth2-proxy-secret
+                  key: OAUTH2_PROXY_COOKIE_SECRET
+          ports:
+            - name: http
+              containerPort: 4180
+            - name: metrics
+              containerPort: 44180
+          volumeMounts:
+            - name: keycloak-ca
+              mountPath: /etc/oauth2-proxy/ca.crt
+              subPath: ca.crt
+              readOnly: true
+      volumes:
+        - name: keycloak-ca
+          secret:
+            secretName: nxito-local-tls
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: oauth2-proxy-service
+  namespace: authorization
+spec:
+  selector:
+    app: oauth2-proxy
+  ports:
+    - name: http
+      port: 4180
+      targetPort: http

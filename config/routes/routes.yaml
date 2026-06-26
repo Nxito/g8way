@@ -1,0 +1,317 @@
+# Project: g8way
+# Author: Xito
+# License: Apache License 2.0
+
+#TODO: Separar rutas en archivos individuales por aplicación, para que sea más fácil de mantener y actualizar.
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: portainer-route
+  namespace: portainer 
+spec:
+  parentRefs:
+  - name: traefik-gateway
+    namespace: traefik
+    sectionName: https
+    kind: Gateway 
+  hostnames:
+  - "portainer.nxito.local"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+      - name: portainer
+        namespace: portainer
+        port: 9000 
+--- 
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: oauth-route
+  namespace: authorization
+spec:
+  parentRefs:
+  - name: traefik-gateway
+    namespace: traefik
+    sectionName: https
+    kind: Gateway 
+  hostnames:
+  - "auth.nxito.local" 
+  # rules:
+  #   - matches:
+  #     - path:
+  #         type: PathPrefix
+  #         value: /
+  #     filters:
+  #       - type: URLRewrite
+  #         urlRewrite:
+  #           path:
+  #             type: ReplacePrefixMatch
+  #             replacePrefixMatch: /
+  #     backendRefs:
+  #       - name: keycloak
+  #         port: 8080 
+  rules:
+    # 1. Regla para el Proxy (Callback centralizado para todos los subdominios)
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /oauth2
+      backendRefs:
+        - name: oauth2-proxy-service
+          port: 4180
+
+    # 2. Regla para Keycloak (Interfaz de Login)
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: keycloak
+          port: 8080 
+--- 
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: homepage-route
+  namespace: applications
+spec:
+  parentRefs:
+  - name: traefik-gateway
+    namespace: traefik
+    sectionName: https
+    kind: Gateway 
+  hostnames:
+  - "nxito.local"
+  - "home.nxito-local"
+  # - "192.168.50.201"      # IP de MetalLB
+  # - "100.70.128.92"           # IP de Tailscale
+  rules:
+    # REGLA 1: Excepción para el Proxy (Sin Middleware)
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /oauth2
+      backendRefs:
+        - name: oauth2-proxy-service
+          namespace: authorization
+          port: 4180 
+    # REGLA 2: EDITOR Nodered
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /admin
+      filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: traefik.io
+            kind: Middleware
+            name: oauth2-proxy-auth
+      backendRefs:
+      - name: node-red-service
+        port: 1880
+
+    # # REGLA 2: apps Nodered
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /app
+      backendRefs:
+      - name: node-red-service
+        port: 1880
+    # # REGLA 3 homepage
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: traefik.io
+            kind: Middleware
+            name: oauth2-proxy-auth
+      backendRefs:
+        - name: homepage
+          port: 3000
+        
+--- 
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: navidrome-route
+  namespace: applications
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+      sectionName: https
+  hostnames:
+    - "music.nxito.local"
+  rules:
+  # REGLA 0: Excepción para el Proxy (Sin Middleware)
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /oauth2
+      backendRefs:
+        - name: oauth2-proxy-service
+          namespace: authorization
+          port: 4180
+    # REGLA 1: API para Ultrasonic (Sin Keycloak)
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /rest
+      backendRefs:
+        - name: navidrome
+          port: 4533
+
+    # REGLA 2: Interfaz Web (Con Keycloak)
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: traefik.io
+            kind: Middleware
+            name: oauth2-proxy-auth
+      backendRefs:
+        - name: navidrome
+          port: 4533
+--- 
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: stirling-route
+  namespace: applications
+spec:
+  parentRefs:
+  - name: traefik-gateway
+    namespace: traefik
+    sectionName: https
+    kind: Gateway 
+  hostnames:
+  - "pdf.nxito.local" 
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: s-pdf
+          port: 8080 
+ 
+--- 
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: argocd-route
+  namespace: argocd
+spec:
+  parentRefs:
+  - name: traefik-gateway
+    namespace: traefik
+    sectionName: https
+    kind: Gateway 
+  hostnames:
+  - "argocd.nxito.local" 
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: argocd-server
+          port: 80
+ 
+--- 
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: cloud-route
+  namespace: applications
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+      sectionName: https
+  hostnames:
+    - "cloud.nxito.local"
+  rules:
+    # - matches:
+    #     - path:
+    #         type: PathPrefix
+    #         value: /oauth2
+    #   backendRefs:
+    #     - name: oauth2-proxy-service
+    #       namespace: authorization
+    #       port: 4180
+    # - matches:
+    #     - path:
+    #         type: Exact
+    #         value: /login
+    #   filters:
+    #     - type: RequestRedirect
+    #       requestRedirect:
+    #         path:
+    #           type: ReplaceFullPath
+    #           replaceFullPath: /apps/sociallogin/custom_oidc/keycloak
+    #         statusCode: 302
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      # filters:
+      #   - type: ExtensionRef
+      #     extensionRef:
+      #       group: traefik.io
+      #       kind: Middleware
+      #       name: oauth2-proxy-auth
+
+
+      backendRefs:
+        - name: nextcloud
+          port: 8080
+
+
+#----------------------------------------------------------------------
+# CLOUDLFARE
+#----------------------------------------------------------------------
+
+--- 
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: public-nodered-route
+  namespace: applications
+spec:
+  parentRefs:
+  - name: traefik-gateway
+    namespace: traefik
+    sectionName: https
+    kind: Gateway 
+  hostnames:
+  - "nxito.me"
+  - "test.nxito.me"
+  rules:
+      # Regla 1: Denegar acceso a la administración
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /app/admin
+      # BackendRef sera 404
+
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /app
+      backendRefs:
+      - name: node-red-service
+        port: 1880
+ 
+        
