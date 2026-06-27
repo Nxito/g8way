@@ -1,0 +1,49 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: keycloak-db-secret
+  namespace: authorization
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: vault-backend
+    kind: ClusterSecretStore
+  target:
+    name: keycloak-db-secret
+    creationPolicy: Owner
+  data:
+    - secretKey: POSTGRES_USER
+      remoteRef:
+        key: secret/keycloak/db
+        property: username
+    - secretKey: POSTGRES_PASSWORD
+      remoteRef:
+        key: secret/keycloak/db
+        property: password
+    - secretKey: POSTGRES_DB
+      remoteRef:
+        key: secret/keycloak/db
+        property: database
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: keycloak-admin-secret
+  namespace: authorization
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: vault-backend
+    kind: ClusterSecretStore
+  target:
+    name: keycloak-admin-secret
+    creationPolicy: Owner
+  data:
+    - secretKey: KC_BOOTSTRAP_ADMIN_USERNAME
+      remoteRef:
+        key: secret/keycloak/admin
+        property: username
+    - secretKey: KC_BOOTSTRAP_ADMIN_PASSWORD
+      remoteRef:
+        key: secret/keycloak/admin
+        property: password
