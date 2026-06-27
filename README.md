@@ -1,6 +1,8 @@
 # g8way
 Deploy with ArgoCD a k8s api-gateway solution with traefik, certmanager, keycloak and more.
 
+![g8way](image.png)
+
 > Al momento de este commit, estoy usando externamente un pihole y hashicorp vault en docker.
 > El motivo: de momento no creo que sean partes que deban ir a nivel de máquinas / cluster.
 
