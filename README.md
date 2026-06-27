@@ -44,8 +44,6 @@ Ejemplo:
 No se tu, pero yo uso una vpn tailscale y pi-hole para tenerles nombres fijos a mis rutas. De esta forma toda mi red tiene acceso a mis apps de administrador pero nadie externamente puede tocarlas ( a no  ser que se les crucen los cables en tailscale )
 
 Tienes en docker compose un pi-hole preparado en la ruta 'external/pi-hole'
-
-# Paso 4
-
+ 
 
 
