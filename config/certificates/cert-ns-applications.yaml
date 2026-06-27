@@ -1,0 +1,33 @@
+# Project: g8way
+# Author: Xito
+# License: Apache License 2.0
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: nxito-local-multi-cert 
+  namespace: applications
+spec:
+  secretName: nxito-local-tls
+  duration: 8760h # 1 año
+  renewBefore: 720h # Renovar 30 días antes
+  subject:
+    organizations:
+      - "Nxito Labs"
+    countries:
+      - "ES"
+    provinces:
+      - "A Coruña"
+    localities:
+      - "Santiago de Compostela"
+  commonName: "nxito.local"
+  dnsNames:
+    - "nxito.local"
+    - "*.nxito.local"
+  ipAddresses:
+    - "192.168.50.200"
+    - "192.168.50.201" # añadido la ip  de metallb
+    - "100.70.128.92" # añadido la ip  de tailscale, por si acaso
+  issuerRef:
+    name: nxito-ca-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
